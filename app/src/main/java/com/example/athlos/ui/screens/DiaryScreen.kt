@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,21 +20,45 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.athlos.ui.models.FoodItem
 import com.example.athlos.ui.theme.AthlosTheme
 import com.example.athlos.ui.theme.DarkGreen
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import java.util.UUID
+
+private val MealTitleBackgroundColor = Color(0xFFE0E0E0)
+private val FoodCardBackgroundColor = Color(0xFFF5F5F5)
 
 @Composable
 fun DiaryScreen() {
+    val totalKcal = remember { mutableStateOf(1200) }
+    val breakfastFoods = remember { mutableStateListOf<FoodItem>() }
+    val lunchFoods = remember { mutableStateListOf<FoodItem>() }
+    val dinnerFoods = remember { mutableStateListOf<FoodItem>() }
+    val snacksOtherFoods = remember { mutableStateListOf<FoodItem>() }
+
+    val dummyFood = FoodItem(
+        id = UUID.randomUUID().toString(),
+        name = "Frango Grelhado",
+        quantity = 100f,
+        unit = "g",
+        protein = 25f,
+        carbohydrate = 0f,
+        fiber = 0f,
+        fat = 3f,
+        calories = 165
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "1200 kcal",
+            text = "${totalKcal.value} kcal",
             fontSize = 24.sp,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onPrimary,
@@ -50,65 +71,114 @@ fun DiaryScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MacroProgressItem(
-                label = "CARBOIDRATO",
-                progress = 70,
-                progressColor = Color(0xFFFFC107)
-            )
-            MacroProgressItem(
-                label = "PROTEÍNA",
-                progress = 85,
-                progressColor = Color(0xFFD32F2F)
-            )
-            MacroProgressItem(
-                label = "FIBRAS",
-                progress = 60,
-                progressColor = Color(0xFF4CAF50)
-            )
+            MacroProgressItem("CARBOIDRATO", 70, Color(0xFFFFC107))
+            MacroProgressItem("PROTEÍNA", 85, Color(0xFFD32F2F))
+            MacroProgressItem("FIBRA", 60, Color(0xFF4CAF50))
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
 
-        MealSection(title = "CAFÉ")
-        MealSection(title = "ALMOÇO")
-        MealSection(title = "JANTAR")
-        MealSection(title = "LANCHES/OUTROS")
+        MealSection("CAFÉ DA MANHÃ", breakfastFoods) {
+            breakfastFoods.add(dummyFood.copy(id = UUID.randomUUID().toString(), name = "Pão Integral"))
+        }
+        MealSection("ALMOÇO", lunchFoods) {
+            lunchFoods.add(dummyFood.copy(id = UUID.randomUUID().toString(), name = "Arroz e Feijão"))
+        }
+        MealSection("JANTAR", dinnerFoods) {
+            dinnerFoods.add(dummyFood.copy(id = UUID.randomUUID().toString(), name = "Salada Mista"))
+        }
+        MealSection("LANCHES/OUTROS", snacksOtherFoods) {
+            snacksOtherFoods.add(dummyFood.copy(id = UUID.randomUUID().toString(), name = "Maçã"))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
 @Composable
-fun MealSection(title: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 18.sp,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 32.dp)
-        )
+fun MealSection(title: String, foods: List<FoodItem>, onAddFood: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp)) {
+        // Fundo colorido para o título da refeição
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MealTitleBackgroundColor)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onAddFood) {
+                    Icon(Icons.Default.Add, contentDescription = "Adicionar alimento", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = "",
-            onValueChange = { /* TODO: Implementar lógica de estado */ },
-            label = { Text("Adicionar refeição") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
-            colors = defaultTextFieldColors()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = "",
-            onValueChange = { /* TODO: Implementar lógica de estado */ },
-            label = { Text("Adicionar refeição") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
-            colors = defaultTextFieldColors()
-        )
+
+        if (foods.isEmpty()) {
+            Text(
+                text = "Nenhum alimento adicionado. Clique no '+' para adicionar.",
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        } else {
+            foods.forEach { food ->
+                FoodItemCard(food)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun FoodItemCard(food: FoodItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = FoodCardBackgroundColor), // cor personalizada aqui
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = food.name,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "${food.quantity} ${food.unit}",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Prot: ${food.protein}g | Carb: ${food.carbohydrate}g | Fib: ${food.fiber}g | Gord: ${food.fat}g | ${food.calories}kcal",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
     }
 }
 
@@ -138,19 +208,16 @@ fun ProgressRing(progress: Int, progressColor: Color, strokeWidth: Dp) {
         )
     }
 
-
     val backgroundRingColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
 
     Canvas(modifier = Modifier.size(80.dp)) {
         val radius = size.minDimension / 2f
-
 
         drawCircle(
             color = backgroundRingColor,
             radius = radius,
             style = Stroke(width = strokeWidth.toPx())
         )
-
 
         drawArc(
             color = progressColor,
@@ -163,20 +230,6 @@ fun ProgressRing(progress: Int, progressColor: Color, strokeWidth: Dp) {
         )
     }
 }
-
-
-@Composable
-private fun defaultTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-    cursorColor = MaterialTheme.colorScheme.primary,
-    focusedContainerColor = MaterialTheme.colorScheme.surface,
-    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-    focusedLabelColor = MaterialTheme.colorScheme.onSurface,
-    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface,
-    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-)
 
 @Preview(showBackground = true)
 @Composable
