@@ -16,15 +16,32 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.athlos.ui.screens.*
+import com.example.athlos.ui.screens.DARK_MODE_KEY
+import com.example.athlos.ui.screens.dataStore
 import com.example.athlos.ui.theme.AthlosTheme
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import android.util.Log
+import com.example.athlos.ui.screens.signinscreens.RegisterScreen
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AthlosTheme {
-                AthlosApp()
+            val darkModeEnabled by this.dataStore.data.map { preferences ->
+                preferences[DARK_MODE_KEY] ?: false
+            }.collectAsState(initial = false)
+
+            Log.d("AthlosApp", "Modo Escuro Ativado (MainActivity): $darkModeEnabled")
+
+            AthlosTheme(darkTheme = darkModeEnabled) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    AthlosApp()
+                }
             }
         }
     }
@@ -41,16 +58,17 @@ fun AthlosApp() {
         composable("main") {
             MainScreenWithBottomNav(mainNavController)
         }
+        composable("settings") { SettingsScreen() }
     }
 }
 
-data class DrawerItem(val label: String, val icon: ImageVector)
+data class DrawerItem(val label: String, val icon: ImageVector, val route: String? = null)
 
 val drawerItems = listOf(
-    DrawerItem("Dúvidas frequentes", Icons.Default.Help),
-    DrawerItem("Configurações", Icons.Default.Settings),
-    DrawerItem("Fale Conosco", Icons.Default.Email),
-    DrawerItem("Sair", Icons.Default.ExitToApp)
+    DrawerItem("Dúvidas frequentes", Icons.Default.Help, null),
+    DrawerItem("Configurações", Icons.Default.Settings, "settings"),
+    DrawerItem("Fale Conosco", Icons.Default.Email, null),
+    DrawerItem("Sair", Icons.Default.ExitToApp, null)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +89,17 @@ fun MainScreenWithBottomNav(mainNavController: NavHostController? = null) {
                         icon = { Icon(item.icon, contentDescription = item.label) },
                         selected = false,
                         onClick = {
-                            // TODO
+                            scope.launch { drawerState.close() }
+                            // Aqui item.route já será o valor correto (String? ou null)
+                            item.route?.let { route ->
+                                mainNavController?.navigate(route) {
+                                    popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
                         }
                     )
                 }
