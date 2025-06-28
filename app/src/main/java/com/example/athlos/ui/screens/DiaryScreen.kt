@@ -27,7 +27,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.athlos.api.FatSecretApi
 import com.example.athlos.ui.models.FoodItem
 import com.example.athlos.ui.models.FoodItemApi
 import com.example.athlos.ui.theme.AthlosTheme
@@ -96,7 +95,6 @@ fun MealSection(title: String, foods: MutableList<FoodItem>, scope: CoroutineSco
     var showSearchDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf(listOf<FoodItemApi>()) }
-    var isLoadingSearch by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         Box(
@@ -138,72 +136,9 @@ fun MealSection(title: String, foods: MutableList<FoodItem>, scope: CoroutineSco
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = {
-                            if (searchQuery.isNotBlank()) {
-                                scope.launch(Dispatchers.IO) {
-                                    isLoadingSearch = true
-                                    try {
-                                        val result = FatSecretApi.service.searchFoods(searchQuery)
-                                        searchResults = result.foods.food ?: emptyList()
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        launch(Dispatchers.Main) {
-                                            Toast.makeText(context, "Erro na busca: ${e.message}", Toast.LENGTH_SHORT).show()
-                                        }
-                                        searchResults = emptyList()
-                                    } finally {
-                                        isLoadingSearch = false
-                                    }
-                                }
-                            } else {
-                                Toast.makeText(context, "Por favor, digite algo para buscar.", Toast.LENGTH_SHORT).show()
-                            }
+                            Toast.makeText(context, "Busca simulada: '$searchQuery'", Toast.LENGTH_SHORT).show()
                         }) {
                             Text("Buscar")
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        if (isLoadingSearch) {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                        } else if (searchResults.isNotEmpty()) {
-                            androidx.compose.foundation.lazy.LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                                items(searchResults, key = { it.food_id }) { item ->
-                                    TextButton(onClick = {
-                                        scope.launch(Dispatchers.IO) {
-                                            try {
-                                                val macros = parseMacros(item.food_name + " " + item.food_type)
-
-                                                val foodItem = FoodItem(
-                                                    id = item.food_id,
-                                                    name = item.food_name,
-                                                    quantity = (macros["quantity"] as? Float) ?: 0f,
-                                                    unit = macros["unitStr"]?.toString() ?: "g",
-                                                    protein = (macros["protein"] as? Float) ?: 0f,
-                                                    carbohydrate = (macros["carbs"] as? Float) ?: 0f,
-                                                    fiber = (macros["fiber"] as? Float) ?: 0f,
-                                                    fat = (macros["fat"] as? Float) ?: 0f,
-                                                    calories = (macros["calories"] as? Float)?.toInt() ?: 0
-                                                )
-                                                foods.add(foodItem)
-                                                launch(Dispatchers.Main) {
-                                                    showSearchDialog = false
-                                                    searchQuery = ""
-                                                    searchResults = emptyList()
-                                                }
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                                launch(Dispatchers.Main) {
-                                                    Toast.makeText(context, "Erro ao adicionar alimento: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                        }
-                                    }) {
-                                        Text(item.food_name + (item.brand_name?.let { " ($it)" } ?: "") + "\n" + item.food_type)
-                                    }
-                                }
-                            }
-                        } else if (searchQuery.isNotBlank()) {
-                            Text("Nenhum resultado encontrado para '${searchQuery}'.")
                         }
                     }
                 },
@@ -232,23 +167,6 @@ fun MealSection(title: String, foods: MutableList<FoodItem>, scope: CoroutineSco
             }
         }
     }
-}
-
-fun parseMacros(description: String): Map<String, Any> {
-    val map = mutableMapOf<String, Any>()
-    val regex = Regex("""([0-9.]+)\s*(g|kcal)?""")
-    val matches = regex.findAll(description)
-    val numbers = matches.map { it.groupValues[1].toFloat() to it.groupValues[2] }.toList()
-
-    map["calories"] = numbers.getOrElse(0) { 0f to "" }.first
-    map["carbs"] = numbers.getOrElse(1) { 0f to "" }.first
-    map["protein"] = numbers.getOrElse(2) { 0f to "" }.first
-    map["fat"] = numbers.getOrElse(3) { 0f to "" }.first
-    map["fiber"] = numbers.getOrElse(4) { 0f to "" }.first
-
-    map["quantity"] = 100f
-    map["unitStr"] = "g"
-    return map
 }
 
 @Composable
